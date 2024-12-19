@@ -89,6 +89,7 @@ def process_file_with_format(args):
     """
     A wrapper for process_file function to allow multiprocessing with additional arguments.
     """
+    print(args)
     filename, taxdb, output_format, column_selection, rank = args
     return process_file(filename, taxdb, output_format=output_format, column_selection=column_selection, lineage_rank=rank)
 
@@ -101,7 +102,7 @@ def main():
     # Subparser for 'gather'
     parser_gather = subparsers.add_parser('gather', help="Options for 'gather' file type.")
     parser_gather.add_argument('filenames', nargs='+', help="List of input sourmash gather files to combine.")
-    parser_gather.add_argument('-t', '--taxonomy-file', '--taxonomy', nargs='?', metavar='FILE', help="The Sourmash taxonomy file that corresponds with the database that generated the sourmash gather files.")
+    parser_gather.add_argument('-t', '--taxonomy-file', '--taxonomy', nargs='?', metavar='FILE', default=None, help="The Sourmash taxonomy file that corresponds with the database that generated the sourmash gather files.")
     parser_gather.add_argument('-l', '--lineage-rank', '--lineage', default='s__species', help="Compress the tables by user-defined taxonomic lineage rank associated with sourmash taxonomic file")
     parser_gather.add_argument('-c', '--column', type=str, default='f_unique_weighted', help="The numerical column from 'gather' to poplate the table values (default: 'f_unique_weighted').\nVisit https://sourmash.readthedocs.io/en/latest/classifying-signatures.html#id22 for more information.")
     parser_gather.add_argument('-o', '--output', required=True, help="Path to save the combined output CSV file.")
@@ -111,7 +112,7 @@ def main():
     # Subparser for 'prefetch'
     parser_prefetch = subparsers.add_parser('prefetch', help="Options for 'prefetch' file type.")
     parser_prefetch.add_argument('filenames', nargs='+', help="List of input sourmash prefetch files to combine.")
-    parser_prefetch.add_argument('-t', '--taxonomy-file', '--taxonomy', nargs='?', metavar='FILE', help="The Sourmash taxonomy file that corresponds with the database that generated the sourmash prefetch files.")
+    parser_prefetch.add_argument('-t', '--taxonomy-file', '--taxonomy', nargs='?', metavar='FILE', default=None, help="The Sourmash taxonomy file that corresponds with the database that generated the sourmash prefetch files.")
     parser_prefetch.add_argument('-c', '--column', type=str, default='jaccard', help="The numerical column from 'prefetch' to populate the table values (default: 'jaccard').\nVisit https://sourmash.readthedocs.io/en/latest/classifying-signatures.html#id23 for more information.")
     parser_prefetch.add_argument('-o', '--output', required=True, help="Path to save the combined output CSV file.")
     parser_prefetch.add_argument('-f', '--format', choices=['dense', 'sparse'], default='dense', help="Output file structure: dense or sparse OTU.")
@@ -136,7 +137,8 @@ def main():
 
     else:
         # Parallel processing all files (list a tuple of filename with output structure, send that list to process_file_with_format which runs the process_file function)
-        file_format_args = [(filename, None, args.format, args.column) for filename in args.filenames]
+        file_format_args = [(filename, args.taxonomy_file, args.format, args.column, args.lineage_rank) for filename in args.filenames]
+        print(file_format_args)
 
         with ProcessPoolExecutor() as executor:
             dfs = list(executor.map(process_file_with_format, file_format_args))
